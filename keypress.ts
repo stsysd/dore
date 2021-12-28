@@ -3,7 +3,7 @@ import { keycode } from "./deps.ts";
 type KeyCode = keycode.KeyCode;
 
 export async function* keypress(
-  opts: { tty?: Deno.File; bufferSize?: number } = {}
+  opts: { tty?: Deno.File; bufferSize?: number } = {},
 ): AsyncGenerator<KeyCode> {
   const buffer = new Uint8Array(opts.bufferSize || 256);
   const tty = opts.tty ?? Deno.stdin;

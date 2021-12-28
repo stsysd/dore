@@ -38,7 +38,7 @@ export class InteractiveSelector {
 
   constructor(
     private source: string[],
-    private out: Deno.Writer & { readonly rid: number } = Deno.stdout
+    private out: Deno.Writer & { readonly rid: number } = Deno.stdout,
   ) {
     this.fuse = new Fuse(
       source.map((text) => ({ text })),
@@ -47,7 +47,7 @@ export class InteractiveSelector {
         ignoreLocation: true,
         threshold: 0.0,
         keys: ["text"],
-      }
+      },
     );
     this.filtered = this.source;
   }
@@ -87,9 +87,11 @@ export class InteractiveSelector {
     w.writeSync(moveCursor(1, 1));
     w.writeSync(encode(truncate(`QUERY> ${this.input}`, columns)));
     w.writeSync(saveCurosr());
-    for (const [line, i] of this.filtered
-      .slice(0, rows - 1)
-      .map((line, i) => [truncate(line, columns), i] as const)) {
+    for (
+      const [line, i] of this.filtered
+        .slice(0, rows - 1)
+        .map((line, i) => [truncate(line, columns), i] as const)
+    ) {
       w.writeSync(encode("\n"));
       if (i == this.index) {
         w.writeSync(encode(`${colors.bgMagenta(line || " ")}`));
@@ -147,7 +149,7 @@ export class InteractiveSelector {
 }
 
 export async function interactiveSelection(
-  source: string[]
+  source: string[],
 ): Promise<string | null> {
   const isel = new InteractiveSelector(source);
   const tty = await Deno.open("/dev/tty");
