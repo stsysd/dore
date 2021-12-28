@@ -7,9 +7,10 @@ import {
   Version,
 } from "https://raw.githubusercontent.com/stsysd/classopt/v0.1.0/mod.ts";
 import { interactiveSelection } from "./mod.ts";
+import info from "./info.json" assert { type: "json" };
 
-@Name("isel")
-@Version("0.0.0")
+@Name(info.name)
+@Version(info.version)
 @Help("interactive selector")
 class Program extends Command {
   @Arg({ name: "FILE", optional: true })
