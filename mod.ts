@@ -131,7 +131,6 @@ export class InteractiveSelector {
   async pollKeypress(): Promise<void> {
     for await (const key of this.console.keypress()) {
       if (key.ctrl) {
-        if (key.name === "c") throw "abort by ctrl-c";
         continue;
       }
       switch (key.name) {
