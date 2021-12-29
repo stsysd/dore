@@ -9,6 +9,27 @@ import {
 } from "./screen.ts";
 import { KeyCode, keypress } from "./keypress.ts";
 
+export interface IConsole {
+  write(p: Uint8Array): Promise<void>;
+  size(): { columns: number; rows: number };
+  keypress(): AsyncGenerator<KeyCode>;
+}
+
+export async function ttyConsole(): Promise<IConsole> {
+  const tty = await Deno.open("/dev/tty", { read: true, write: true });
+  return {
+    async write(p: Uint8Array): Promise<void> {
+      await tty.write(p);
+    },
+    size(): { columns: number; rows: number } {
+      return Deno.consoleSize(tty.rid);
+    },
+    keypress(): AsyncGenerator<KeyCode> {
+      return keypress({ tty });
+    },
+  };
+}
+
 const encoder = new TextEncoder();
 function encode(str: string): Uint8Array {
   return encoder.encode(str);
@@ -38,7 +59,7 @@ export class InteractiveSelector {
 
   constructor(
     private source: string[],
-    private out: Deno.Writer & { readonly rid: number } = Deno.stdout,
+    private console: IConsole,
   ) {
     this.fuse = new Fuse(
       source.map((text) => ({ text })),
@@ -68,21 +89,25 @@ export class InteractiveSelector {
       .map((r) => r.item.text);
   }
 
-  async run(keys: AsyncGenerator<KeyCode>): Promise<string | null> {
+  get consoleSize(): { columns: number; rows: number } {
+    return this.console.size();
+  }
+
+  async run(): Promise<string | null> {
     try {
-      await this.out.write(enterBuffer());
+      await this.console.write(enterBuffer());
       await this.print();
-      await Promise.race([this.pollKeypress(keys), this.pollSignal()]);
+      await Promise.race([this.pollKeypress(), this.pollSignal()]);
       return this.filtered[this.index] ?? null;
     } finally {
-      await this.out.write(exitBuffer());
+      await this.console.write(exitBuffer());
       this.signal?.dispose();
     }
   }
 
   async print() {
     const w = new StringWriter();
-    const { rows, columns } = Deno.consoleSize(this.out.rid);
+    const { rows, columns } = this.consoleSize;
     w.writeSync(clearBuffer());
     w.writeSync(moveCursor(1, 1));
     w.writeSync(encode(truncate(`QUERY> ${this.input}`, columns)));
@@ -100,11 +125,11 @@ export class InteractiveSelector {
       }
     }
     w.writeSync(loadCurosr());
-    await this.out.write(encode(w.toString()));
+    await this.console.write(encode(w.toString()));
   }
 
-  async pollKeypress(keys: AsyncGenerator<KeyCode>): Promise<void> {
-    for await (const key of keys) {
+  async pollKeypress(): Promise<void> {
+    for await (const key of this.console.keypress()) {
       if (key.ctrl) {
         if (key.name === "c") throw "abort by ctrl-c";
         continue;
@@ -129,7 +154,7 @@ export class InteractiveSelector {
           this.input += key.sequence ?? "";
           break;
       }
-      const { rows } = Deno.consoleSize(this.out.rid);
+      const { rows } = this.consoleSize;
       this.index = Math.min(this.filtered.length - 1, this.index);
       this.index = Math.min(rows - 1, this.index);
       this.index = Math.max(0, this.index);
@@ -141,7 +166,7 @@ export class InteractiveSelector {
     const sig = signal("SIGWINCH");
     this.signal = sig;
     for await (const _ of sig) {
-      const { rows } = Deno.consoleSize(this.out.rid);
+      const { rows } = this.consoleSize;
       this.index = Math.min(rows - 1, this.index);
       await this.print();
     }
@@ -151,7 +176,6 @@ export class InteractiveSelector {
 export async function interactiveSelection(
   source: string[],
 ): Promise<string | null> {
-  const isel = new InteractiveSelector(source);
-  const tty = await Deno.open("/dev/tty");
-  return await isel.run(keypress({ tty }));
+  const isel = new InteractiveSelector(source, await ttyConsole());
+  return await isel.run();
 }

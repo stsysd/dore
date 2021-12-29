@@ -1,5 +1,5 @@
 import { keycode } from "../deps.ts";
-import { InteractiveSelector } from "../mod.ts";
+import { IConsole, InteractiveSelector } from "../mod.ts";
 import { assertEquals } from "https://deno.land/std@0.119.0/testing/asserts.ts";
 const RETURN_KEY = {
   name: "return",
@@ -79,105 +79,123 @@ async function* appendAsyncGenerator<T>(
   }
 }
 
-function nullSink(): Deno.Writer & { readonly rid: number } {
+function fakeConsole(keys: AsyncGenerator<keycode.KeyCode>): IConsole {
   return {
-    rid: Deno.stdout.rid,
-    write(_: Uint8Array): Promise<number> {
-      return Promise.resolve(0);
+    write(_: Uint8Array) {
+      // nothing
+      return Promise.resolve();
+    },
+    size() {
+      return { columns: 80, rows: 40 };
+    },
+    keypress() {
+      return keys;
     },
   };
 }
 
 Deno.test("input nothing", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"];
-  const isel = new InteractiveSelector(source, nullSink());
-  const result = await isel.run(str2keys("\r"));
+  const isel = new InteractiveSelector(source, fakeConsole(str2keys("\r")));
+  const result = await isel.run();
   assertEquals(result, "foo");
 });
 
 Deno.test("select", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"];
-  const isel = new InteractiveSelector(source, nullSink());
-  const result = await isel.run(str2keys("q\r"));
+  const isel = new InteractiveSelector(source, fakeConsole(str2keys("q\r")));
+  const result = await isel.run();
   assertEquals(result, "qux");
 });
 
 Deno.test("keep order", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"];
-  const isel = new InteractiveSelector(source, nullSink());
-  const result = await isel.run(str2keys("ba\r"));
+  const isel = new InteractiveSelector(source, fakeConsole(str2keys("ba\r")));
+  const result = await isel.run();
   assertEquals(result, "bar");
 });
 
 Deno.test("select with AND pattern", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"];
-  const isel = new InteractiveSelector(source, nullSink());
-  const result = await isel.run(str2keys("foo bar\r"));
+  const isel = new InteractiveSelector(
+    source,
+    fakeConsole(str2keys("foo bar\r")),
+  );
+  const result = await isel.run();
   assertEquals(result, "foobar");
 });
 
 Deno.test("return null", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"];
-  const isel = new InteractiveSelector(source, nullSink());
-  const result = await isel.run(str2keys("hoge\r"));
+  const isel = new InteractiveSelector(source, fakeConsole(str2keys("hoge\r")));
+  const result = await isel.run();
   assertEquals(result, null);
 });
 
 Deno.test("backspace key", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"];
-  const isel = new InteractiveSelector(source, nullSink());
-  const result = await isel.run(
-    appendAsyncGenerator(str2keys("bar"), [BACKSPACE_KEY], str2keys("z\n")),
+  const isel = new InteractiveSelector(
+    source,
+    fakeConsole(
+      appendAsyncGenerator(str2keys("bar"), [BACKSPACE_KEY], str2keys("z\n")),
+    ),
   );
+  const result = await isel.run();
   assertEquals(result, "baz");
 });
 
 Deno.test("down key", async () => {
   const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"];
-  const isel = new InteractiveSelector(source, nullSink());
-  const result = await isel.run(
-    appendAsyncGenerator(str2keys("bar"), [DOWN_KEY, DOWN_KEY, RETURN_KEY]),
+  const isel = new InteractiveSelector(
+    source,
+    fakeConsole(
+      appendAsyncGenerator(str2keys("bar"), [DOWN_KEY, DOWN_KEY, RETURN_KEY]),
+    ),
   );
+  const result = await isel.run();
   assertEquals(result, "bar 3");
 });
 
 Deno.test("down key on bottom", async () => {
   const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"];
-  const isel = new InteractiveSelector(source, nullSink());
-  const result = await isel.run(
-    appendAsyncGenerator(
+  const isel = new InteractiveSelector(
+    source,
+    fakeConsole(appendAsyncGenerator(
       str2keys("bar"),
       [...Array(10)].map(() => DOWN_KEY),
       [RETURN_KEY],
-    ),
+    )),
   );
+  const result = await isel.run();
   assertEquals(result, "bar 5");
 });
 
 Deno.test("up key", async () => {
   const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"];
-  const isel = new InteractiveSelector(source, nullSink());
-  const result = await isel.run(
-    appendAsyncGenerator(str2keys("bar"), [
+  const isel = new InteractiveSelector(
+    source,
+    fakeConsole(appendAsyncGenerator(str2keys("bar"), [
       DOWN_KEY,
       DOWN_KEY,
       UP_KEY,
       RETURN_KEY,
-    ]),
+    ])),
   );
+  const result = await isel.run();
   assertEquals(result, "bar 2");
 });
 
 Deno.test("up key on top", async () => {
   const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"];
-  const isel = new InteractiveSelector(source, nullSink());
-  const result = await isel.run(
-    appendAsyncGenerator(
+  const isel = new InteractiveSelector(
+    source,
+    fakeConsole(appendAsyncGenerator(
       str2keys("bar"),
       [...Array(10)].map(() => DOWN_KEY),
       [...Array(20)].map(() => UP_KEY),
       [RETURN_KEY],
-    ),
+    )),
   );
+  const result = await isel.run();
   assertEquals(result, "bar 1");
 });
