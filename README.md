@@ -22,3 +22,14 @@ $ find * -type f | isel > selected
 # from file
 $ isel src.txt > selected
 ```
+
+## As library
+
+isel can be used as library.
+
+```typescript
+import { interactiveSelection } from "https://raw.githubusercontent.com/stsysd/isel/v0.1.0/mod.ts";
+
+const selected = await interactiveSelection(["foo", "bar", "baz"]);
+console.log("SELECTED:", selected);
+```
