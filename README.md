@@ -7,7 +7,7 @@ written by [deno](https://deno.land/).
 ## Installation
 
 ```console
-deno install --allow-read --allow-write=/dev/tty --unstable -n isel https://raw.githubusercontent.com/stsysd/isel/v0.1.0/main.ts
+deno install --allow-read --allow-write=/dev/tty --unstable -n isel https://raw.githubusercontent.com/stsysd/isel/v0.1.1/main.ts
 ```
 
 ## Usage
@@ -28,7 +28,7 @@ $ isel src.txt > selected
 isel can be used as library.
 
 ```typescript
-import { interactiveSelection } from "https://raw.githubusercontent.com/stsysd/isel/v0.1.0/mod.ts";
+import { interactiveSelection } from "https://raw.githubusercontent.com/stsysd/isel/v0.1.1/mod.ts";
 
 const selected = await interactiveSelection(["foo", "bar", "baz"]);
 console.log("SELECTED:", selected);
