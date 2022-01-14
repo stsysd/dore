@@ -9,6 +9,9 @@ import {
 import { interactiveSelection } from "./mod.ts";
 import info from "./info.json" assert { type: "json" };
 
+function printError(msg: string) {
+  console.error(`%c${msg}`, "color: red");
+}
 @Name(info.name)
 @Version(info.version)
 @Help("interactive selector")
@@ -18,16 +21,26 @@ class Program extends Command {
 
   async execute(): Promise<void> {
     const source = await this.loadSource();
-    const selected = await interactiveSelection(source);
-    if (selected != null) {
-      console.log(selected);
+    if (source.length === 0) {
+      printError("ERROR: no choice");
+      Deno.exit(1);
     }
+    if (source.length === 1) {
+      console.log(source[0]);
+      return;
+    }
+    const selected = await interactiveSelection(source);
+    if (selected === null) {
+      printError("ERROR: cancelled");
+      Deno.exit(1);
+    }
+    console.log(selected);
   }
 
   async loadSource(): Promise<string[]> {
     const input = this.file ? await Deno.open(this.file) : Deno.stdin;
     if (Deno.isatty(input.rid)) {
-      console.error("ERROR: fail to setup source: input is tty");
+      printError("ERROR: fail to setup source: input is tty");
       Deno.exit(1);
     }
     const source = [];
