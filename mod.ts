@@ -1,4 +1,4 @@
-import { colors, Disposable, Fuse, signal, StringWriter } from "./deps.ts";
+import { colors, Disposable, signal, StringWriter } from "./deps.ts";
 import {
   clearBuffer,
   enterBuffer,
@@ -51,7 +51,6 @@ function truncate(str: string, width: number): string {
 }
 
 export class InteractiveSelector {
-  private fuse: Fuse<{ text: string }>;
   private index = 0;
   private _input = "";
   private filtered: string[];
@@ -61,15 +60,6 @@ export class InteractiveSelector {
     private source: string[],
     private console: IConsole,
   ) {
-    this.fuse = new Fuse(
-      source.map((text) => ({ text })),
-      {
-        shouldSort: false,
-        ignoreLocation: true,
-        threshold: 0.0,
-        keys: ["text"],
-      },
-    );
     this.filtered = this.source;
   }
 
@@ -80,13 +70,9 @@ export class InteractiveSelector {
   set input(str: string) {
     this._input = str;
     const words = this.input.split(" ");
-    const patterns = words.filter(Boolean).map((text) => ({ text }));
-    if (patterns.length === 0) {
-      this.filtered = this.source;
-    }
-    this.filtered = this.fuse
-      .search({ $and: patterns })
-      .map((r) => r.item.text);
+    this.filtered = this.source.filter((e) =>
+      words.every((w) => e.includes(w))
+    );
   }
 
   get consoleSize(): { columns: number; rows: number } {
