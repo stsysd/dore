@@ -50,14 +50,14 @@ function truncate(str: string, width: number): string {
   return str;
 }
 
-export class InteractiveSelector {
+export class InteractiveSelector<Entry extends { toString(): string }> {
   private index = 0;
   private _input = "";
-  private filtered: string[];
+  private filtered: Entry[];
   private signal: Disposable | null = null;
 
   constructor(
-    private source: string[],
+    private source: Entry[],
     private console: IConsole,
   ) {
     this.filtered = this.source;
@@ -71,7 +71,7 @@ export class InteractiveSelector {
     this._input = str;
     const words = this.input.split(" ");
     this.filtered = this.source.filter((e) =>
-      words.every((w) => e.includes(w))
+      words.every((w) => e.toString().includes(w))
     );
   }
 
@@ -79,7 +79,7 @@ export class InteractiveSelector {
     return this.console.size();
   }
 
-  async run(): Promise<string | null> {
+  async run(): Promise<Entry | null> {
     try {
       await this.console.write(enterBuffer());
       await this.print();
@@ -101,7 +101,7 @@ export class InteractiveSelector {
     for (
       const [line, i] of this.filtered
         .slice(0, rows - 1)
-        .map((line, i) => [truncate(line, columns), i] as const)
+        .map((entry, i) => [truncate(entry.toString(), columns), i] as const)
     ) {
       w.writeSync(encode("\n"));
       if (i == this.index) {
@@ -155,9 +155,11 @@ export class InteractiveSelector {
   }
 }
 
-export async function interactiveSelection(
-  source: string[],
-): Promise<string | null> {
+export async function interactiveSelection<
+  Entry extends { toString(): string },
+>(
+  source: Entry[],
+): Promise<Entry | null> {
   const isel = new InteractiveSelector(source, await ttyConsole());
   return await isel.run();
 }
