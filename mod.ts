@@ -1,4 +1,4 @@
-import { colors, Disposable, signal, StringWriter } from "./deps.ts";
+import { colors, Disposable, StringWriter } from "./deps.ts";
 import {
   clearBuffer,
   enterBuffer,
@@ -83,7 +83,7 @@ export class InteractiveSelector {
     try {
       await this.console.write(enterBuffer());
       await this.print();
-      await Promise.race([this.pollKeypress(), this.pollSignal()]);
+      await this.pollKeypress();
       return this.filtered[this.index] ?? null;
     } finally {
       await this.console.write(exitBuffer());
@@ -117,7 +117,14 @@ export class InteractiveSelector {
   async pollKeypress(): Promise<void> {
     for await (const key of this.console.keypress()) {
       if (key.ctrl) {
-        continue;
+        switch (key.name) {
+          case "c":
+          case "x":
+            this.index = -1;
+            return;
+          default:
+            continue;
+        }
       }
       switch (key.name) {
         case "backspace":
@@ -143,16 +150,6 @@ export class InteractiveSelector {
       this.index = Math.min(this.filtered.length - 1, this.index);
       this.index = Math.min(rows - 1, this.index);
       this.index = Math.max(0, this.index);
-      await this.print();
-    }
-  }
-
-  async pollSignal(): Promise<void> {
-    const sig = signal("SIGWINCH");
-    this.signal = sig;
-    for await (const _ of sig) {
-      const { rows } = this.consoleSize;
-      this.index = Math.min(rows - 1, this.index);
       await this.print();
     }
   }

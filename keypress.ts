@@ -9,7 +9,7 @@ export async function* keypress(
   const tty = opts.tty ?? Deno.stdin;
   try {
     while (true) {
-      Deno.setRaw(tty.rid, true, { cbreak: true });
+      Deno.setRaw(tty.rid, true, { cbreak: false });
       const nread = await tty.read(buffer);
       Deno.setRaw(tty.rid, false);
       const keys = keycode.parse(nread ? buffer.subarray(0, nread) : buffer);
