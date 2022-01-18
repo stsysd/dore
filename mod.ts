@@ -50,7 +50,7 @@ function truncate(str: string, width: number): string {
   return str;
 }
 
-export class InteractiveSelector<Entry extends { toString(): string }> {
+export class InteractiveSelector<Entry extends { view: string }> {
   private index = 0;
   private _input = "";
   private filtered: Entry[];
@@ -71,7 +71,7 @@ export class InteractiveSelector<Entry extends { toString(): string }> {
     this._input = str;
     const words = this.input.split(" ");
     this.filtered = this.source.filter((e) =>
-      words.every((w) => e.toString().includes(w))
+      words.every((w) => e.view.includes(w))
     );
   }
 
@@ -80,6 +80,9 @@ export class InteractiveSelector<Entry extends { toString(): string }> {
   }
 
   async run(): Promise<Entry | null> {
+    if (this.source.length === 0) {
+      return null;
+    }
     try {
       await this.console.write(enterBuffer());
       await this.print();
@@ -101,7 +104,7 @@ export class InteractiveSelector<Entry extends { toString(): string }> {
     for (
       const [line, i] of this.filtered
         .slice(0, rows - 1)
-        .map((entry, i) => [truncate(entry.toString(), columns), i] as const)
+        .map((entry, i) => [truncate(entry.view, columns), i] as const)
     ) {
       w.writeSync(encode("\n"));
       if (i == this.index) {
@@ -155,11 +158,28 @@ export class InteractiveSelector<Entry extends { toString(): string }> {
   }
 }
 
-export async function interactiveSelection<
-  Entry extends { toString(): string },
->(
+export async function select(
+  source: string[],
+): Promise<string | null>;
+export async function select<Entry extends { view: string }>(
+  source: Entry[],
+): Promise<Entry | null>;
+
+export async function select<Entry extends { view: string } | string>(
   source: Entry[],
 ): Promise<Entry | null> {
-  const dore = new InteractiveSelector(source, await ttyConsole());
-  return await dore.run();
+  if (source.length !== 0 && typeof source[0] === "string") {
+    const dore = new InteractiveSelector(
+      (source as string[]).map((view) => ({ view })),
+      await ttyConsole(),
+    );
+    const { view } = await dore.run() ?? { view: null };
+    return view as Entry;
+  } else {
+    const dore = new InteractiveSelector(
+      source as { view: string }[],
+      await ttyConsole(),
+    );
+    return await dore.run() as Entry | null;
+  }
 }

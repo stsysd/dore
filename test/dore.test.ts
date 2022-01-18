@@ -95,45 +95,57 @@ function fakeConsole(keys: AsyncGenerator<keycode.KeyCode>): IConsole {
 }
 
 Deno.test("input nothing", async () => {
-  const source = ["foo", "bar", "baz", "qux", "foobar"];
+  const source = ["foo", "bar", "baz", "qux", "foobar"].map((view) => ({
+    view,
+  }));
   const dore = new InteractiveSelector(source, fakeConsole(str2keys("\r")));
   const result = await dore.run();
-  assertEquals(result, "foo");
+  assertEquals(result?.view, "foo");
 });
 
 Deno.test("select", async () => {
-  const source = ["foo", "bar", "baz", "qux", "foobar"];
+  const source = ["foo", "bar", "baz", "qux", "foobar"].map((view) => ({
+    view,
+  }));
   const dore = new InteractiveSelector(source, fakeConsole(str2keys("q\r")));
   const result = await dore.run();
-  assertEquals(result, "qux");
+  assertEquals(result?.view, "qux");
 });
 
 Deno.test("keep order", async () => {
-  const source = ["foo", "bar", "baz", "qux", "foobar"];
+  const source = ["foo", "bar", "baz", "qux", "foobar"].map((view) => ({
+    view,
+  }));
   const dore = new InteractiveSelector(source, fakeConsole(str2keys("ba\r")));
   const result = await dore.run();
-  assertEquals(result, "bar");
+  assertEquals(result?.view, "bar");
 });
 
 Deno.test("select with AND pattern", async () => {
-  const source = ["foo", "bar", "baz", "qux", "foobar"];
+  const source = ["foo", "bar", "baz", "qux", "foobar"].map((view) => ({
+    view,
+  }));
   const dore = new InteractiveSelector(
     source,
     fakeConsole(str2keys("foo bar\r")),
   );
   const result = await dore.run();
-  assertEquals(result, "foobar");
+  assertEquals(result?.view, "foobar");
 });
 
 Deno.test("return null", async () => {
-  const source = ["foo", "bar", "baz", "qux", "foobar"];
+  const source = ["foo", "bar", "baz", "qux", "foobar"].map((view) => ({
+    view,
+  }));
   const dore = new InteractiveSelector(source, fakeConsole(str2keys("hoge\r")));
   const result = await dore.run();
   assertEquals(result, null);
 });
 
 Deno.test("backspace key", async () => {
-  const source = ["foo", "bar", "baz", "qux", "foobar"];
+  const source = ["foo", "bar", "baz", "qux", "foobar"].map((view) => ({
+    view,
+  }));
   const dore = new InteractiveSelector(
     source,
     fakeConsole(
@@ -141,11 +153,12 @@ Deno.test("backspace key", async () => {
     ),
   );
   const result = await dore.run();
-  assertEquals(result, "baz");
+  assertEquals(result?.view, "baz");
 });
 
 Deno.test("down key", async () => {
-  const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"];
+  const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"]
+    .map((view) => ({ view }));
   const dore = new InteractiveSelector(
     source,
     fakeConsole(
@@ -153,11 +166,12 @@ Deno.test("down key", async () => {
     ),
   );
   const result = await dore.run();
-  assertEquals(result, "bar 3");
+  assertEquals(result?.view, "bar 3");
 });
 
 Deno.test("down key on bottom", async () => {
-  const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"];
+  const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"]
+    .map((view) => ({ view }));
   const dore = new InteractiveSelector(
     source,
     fakeConsole(appendAsyncGenerator(
@@ -167,11 +181,12 @@ Deno.test("down key on bottom", async () => {
     )),
   );
   const result = await dore.run();
-  assertEquals(result, "bar 5");
+  assertEquals(result?.view, "bar 5");
 });
 
 Deno.test("up key", async () => {
-  const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"];
+  const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"]
+    .map((view) => ({ view }));
   const dore = new InteractiveSelector(
     source,
     fakeConsole(appendAsyncGenerator(str2keys("bar"), [
@@ -182,11 +197,12 @@ Deno.test("up key", async () => {
     ])),
   );
   const result = await dore.run();
-  assertEquals(result, "bar 2");
+  assertEquals(result?.view, "bar 2");
 });
 
 Deno.test("up key on top", async () => {
-  const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"];
+  const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"]
+    .map((view) => ({ view }));
   const dore = new InteractiveSelector(
     source,
     fakeConsole(appendAsyncGenerator(
@@ -197,5 +213,5 @@ Deno.test("up key on top", async () => {
     )),
   );
   const result = await dore.run();
-  assertEquals(result, "bar 1");
+  assertEquals(result?.view, "bar 1");
 });

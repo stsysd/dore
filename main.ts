@@ -6,7 +6,7 @@ import {
   Name,
   Version,
 } from "https://raw.githubusercontent.com/stsysd/classopt/v0.1.0/mod.ts";
-import { interactiveSelection } from "./mod.ts";
+import { select } from "./mod.ts";
 import info from "./info.json" assert { type: "json" };
 
 function printError(msg: string) {
@@ -29,7 +29,7 @@ class Program extends Command {
       console.log(source[0]);
       return;
     }
-    const selected = await interactiveSelection(source);
+    const selected = await select(source);
     if (selected === null) {
       printError("ERROR: cancelled");
       Deno.exit(1);
