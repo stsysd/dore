@@ -96,69 +96,69 @@ function fakeConsole(keys: AsyncGenerator<keycode.KeyCode>): IConsole {
 
 Deno.test("input nothing", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"];
-  const isel = new InteractiveSelector(source, fakeConsole(str2keys("\r")));
-  const result = await isel.run();
+  const dore = new InteractiveSelector(source, fakeConsole(str2keys("\r")));
+  const result = await dore.run();
   assertEquals(result, "foo");
 });
 
 Deno.test("select", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"];
-  const isel = new InteractiveSelector(source, fakeConsole(str2keys("q\r")));
-  const result = await isel.run();
+  const dore = new InteractiveSelector(source, fakeConsole(str2keys("q\r")));
+  const result = await dore.run();
   assertEquals(result, "qux");
 });
 
 Deno.test("keep order", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"];
-  const isel = new InteractiveSelector(source, fakeConsole(str2keys("ba\r")));
-  const result = await isel.run();
+  const dore = new InteractiveSelector(source, fakeConsole(str2keys("ba\r")));
+  const result = await dore.run();
   assertEquals(result, "bar");
 });
 
 Deno.test("select with AND pattern", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"];
-  const isel = new InteractiveSelector(
+  const dore = new InteractiveSelector(
     source,
     fakeConsole(str2keys("foo bar\r")),
   );
-  const result = await isel.run();
+  const result = await dore.run();
   assertEquals(result, "foobar");
 });
 
 Deno.test("return null", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"];
-  const isel = new InteractiveSelector(source, fakeConsole(str2keys("hoge\r")));
-  const result = await isel.run();
+  const dore = new InteractiveSelector(source, fakeConsole(str2keys("hoge\r")));
+  const result = await dore.run();
   assertEquals(result, null);
 });
 
 Deno.test("backspace key", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"];
-  const isel = new InteractiveSelector(
+  const dore = new InteractiveSelector(
     source,
     fakeConsole(
       appendAsyncGenerator(str2keys("bar"), [BACKSPACE_KEY], str2keys("z\n")),
     ),
   );
-  const result = await isel.run();
+  const result = await dore.run();
   assertEquals(result, "baz");
 });
 
 Deno.test("down key", async () => {
   const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"];
-  const isel = new InteractiveSelector(
+  const dore = new InteractiveSelector(
     source,
     fakeConsole(
       appendAsyncGenerator(str2keys("bar"), [DOWN_KEY, DOWN_KEY, RETURN_KEY]),
     ),
   );
-  const result = await isel.run();
+  const result = await dore.run();
   assertEquals(result, "bar 3");
 });
 
 Deno.test("down key on bottom", async () => {
   const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"];
-  const isel = new InteractiveSelector(
+  const dore = new InteractiveSelector(
     source,
     fakeConsole(appendAsyncGenerator(
       str2keys("bar"),
@@ -166,13 +166,13 @@ Deno.test("down key on bottom", async () => {
       [RETURN_KEY],
     )),
   );
-  const result = await isel.run();
+  const result = await dore.run();
   assertEquals(result, "bar 5");
 });
 
 Deno.test("up key", async () => {
   const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"];
-  const isel = new InteractiveSelector(
+  const dore = new InteractiveSelector(
     source,
     fakeConsole(appendAsyncGenerator(str2keys("bar"), [
       DOWN_KEY,
@@ -181,13 +181,13 @@ Deno.test("up key", async () => {
       RETURN_KEY,
     ])),
   );
-  const result = await isel.run();
+  const result = await dore.run();
   assertEquals(result, "bar 2");
 });
 
 Deno.test("up key on top", async () => {
   const source = ["foo", "bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "baz"];
-  const isel = new InteractiveSelector(
+  const dore = new InteractiveSelector(
     source,
     fakeConsole(appendAsyncGenerator(
       str2keys("bar"),
@@ -196,6 +196,6 @@ Deno.test("up key on top", async () => {
       [RETURN_KEY],
     )),
   );
-  const result = await isel.run();
+  const result = await dore.run();
   assertEquals(result, "bar 1");
 });

@@ -160,6 +160,6 @@ export async function interactiveSelection<
 >(
   source: Entry[],
 ): Promise<Entry | null> {
-  const isel = new InteractiveSelector(source, await ttyConsole());
-  return await isel.run();
+  const dore = new InteractiveSelector(source, await ttyConsole());
+  return await dore.run();
 }
