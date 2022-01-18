@@ -1,4 +1,4 @@
-import { interactiveSelection } from "https://raw.githubusercontent.com/stsysd/dore/v0.1.1/mod.ts";
+import { selectString } from "https://raw.githubusercontent.com/stsysd/dore/v0.2.0/mod.ts";
 
-const selected = await interactiveSelection(["foo", "bar", "baz"]);
+const selected = await selectString(["foo", "bar", "baz"]);
 console.log("SELECTED:", selected);
