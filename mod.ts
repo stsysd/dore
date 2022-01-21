@@ -50,14 +50,15 @@ function truncate(str: string, width: number): string {
   return str;
 }
 
-export class InteractiveSelector<Entry extends { view: string }> {
+type Entry<T> = { data: T; view: string };
+export class InteractiveSelector<T> {
   private index = 0;
   private _input = "";
-  private filtered: Entry[];
+  private filtered: Entry<T>[];
   private signal: Disposable | null = null;
 
   constructor(
-    private source: Entry[],
+    private source: Entry<T>[],
     private console: IConsole,
   ) {
     this.filtered = this.source;
@@ -79,7 +80,7 @@ export class InteractiveSelector<Entry extends { view: string }> {
     return this.console.size();
   }
 
-  async run(): Promise<Entry | null> {
+  async run(): Promise<T | null> {
     if (this.source.length === 0) {
       return null;
     }
@@ -87,7 +88,7 @@ export class InteractiveSelector<Entry extends { view: string }> {
       await this.console.write(enterBuffer());
       await this.print();
       await this.pollKeypress();
-      return this.filtered[this.index] ?? null;
+      return this.filtered[this.index]?.data ?? null;
     } finally {
       await this.console.write(exitBuffer());
       this.signal?.dispose();
@@ -157,29 +158,13 @@ export class InteractiveSelector<Entry extends { view: string }> {
     }
   }
 }
-
-export async function select(
-  source: string[],
-): Promise<string | null>;
-export async function select<Entry extends { view: string }>(
-  source: Entry[],
-): Promise<Entry | null>;
-
-export async function select<Entry extends { view: string } | string>(
-  source: Entry[],
-): Promise<Entry | null> {
-  if (source.length !== 0 && typeof source[0] === "string") {
-    const dore = new InteractiveSelector(
-      (source as string[]).map((view) => ({ view })),
-      await ttyConsole(),
-    );
-    const { view } = await dore.run() ?? { view: null };
-    return view as Entry;
-  } else {
-    const dore = new InteractiveSelector(
-      source as { view: string }[],
-      await ttyConsole(),
-    );
-    return await dore.run() as Entry | null;
-  }
+export async function select<T>(
+  source: T[],
+  opts: { show?(t: T): string } = {},
+): Promise<T | null> {
+  const dore = new InteractiveSelector(
+    source.map((t) => ({ data: t, view: opts.show ? opts.show(t) : `${t}` })),
+    await ttyConsole(),
+  );
+  return await dore.run();
 }
