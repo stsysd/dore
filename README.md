@@ -28,8 +28,8 @@ $ dore src.txt > selected
 dore can be used as library.
 
 ```typescript
-import { selectString } from "https://raw.githubusercontent.com/stsysd/dore/v0.2.0/mod.ts";
+import { select } from "https://raw.githubusercontent.com/stsysd/dore/v0.2.0/mod.ts";
 
-const selected = await selectString(["foo", "bar", "baz"]);
+const selected = await select(["foo", "bar", "baz"]);
 console.log("SELECTED:", selected);
 ```
