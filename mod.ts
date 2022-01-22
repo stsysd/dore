@@ -99,14 +99,18 @@ export class InteractiveSelector<T> {
   async print() {
     const w = new StringWriter();
     const { rows, columns } = this.console.size();
+    const pageSize = rows - 1;
+    const pageNum = Math.floor(this.index / pageSize);
     w.writeSync(clearBuffer());
     w.writeSync(moveCursor(1, 1));
     w.writeSync(encode(truncate(`QUERY> ${this.input}`, columns)));
     w.writeSync(saveCurosr());
     for (
       const [line, i] of this.filtered
-        .slice(0, rows - 1)
-        .map((entry, i) => [truncate(entry.view, columns), i] as const)
+        .slice(pageSize * pageNum, pageSize * (pageNum + 1))
+        .map((entry, i) =>
+          [truncate(entry.view, columns), i + pageSize * pageNum] as const
+        )
     ) {
       w.writeSync(encode("\n"));
       if (i === this.index) {
@@ -122,11 +126,11 @@ export class InteractiveSelector<T> {
   }
 
   async pollKeypress(): Promise<void> {
+    const { rows } = this.console.size();
     for await (const key of this.console.keypress()) {
       if (key.ctrl) {
         switch (key.name) {
           case "c":
-          case "escape":
             this.marks = new Set();
             return;
           case "space":
@@ -145,6 +149,9 @@ export class InteractiveSelector<T> {
         }
       } else {
         switch (key.name) {
+          case "escape":
+            this.marks = new Set();
+            return;
           case "backspace":
             this.updateInput(this.input.slice(0, -1));
             break;
@@ -160,6 +167,12 @@ export class InteractiveSelector<T> {
           case "down":
             this.index += 1;
             break;
+          case "left":
+            this.index -= rows - 1;
+            break;
+          case "right":
+            this.index += rows - 1;
+            break;
           case "space":
             this.updateInput(this.input + " ");
             break;
@@ -170,8 +183,7 @@ export class InteractiveSelector<T> {
             break;
         }
       }
-      const { rows } = this.console.size();
-      this.index = Math.min(this.filtered.length - 1, rows - 1, this.index);
+      this.index = Math.min(this.filtered.length - 1, this.index);
       this.index = Math.max(0, this.index);
       await this.print();
     }
