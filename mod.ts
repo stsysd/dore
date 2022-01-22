@@ -53,7 +53,7 @@ function truncate(str: string, width: number): string {
 type Entry<T> = { data: T; view: string };
 export class InteractiveSelector<T> {
   private index = 0;
-  private _input = "";
+  private input = "";
   private filtered: Entry<T>[];
   private signal: Disposable | null = null;
 
@@ -64,20 +64,12 @@ export class InteractiveSelector<T> {
     this.filtered = this.source;
   }
 
-  get input(): string {
-    return this._input;
-  }
-
-  set input(str: string) {
-    this._input = str;
+  updateInput(str: string) {
+    this.input = str;
     const words = this.input.split(" ");
     this.filtered = this.source.filter((e) =>
       words.every((w) => e.view.includes(w))
     );
-  }
-
-  get consoleSize(): { columns: number; rows: number } {
-    return this.console.size();
   }
 
   async run(): Promise<T | null> {
@@ -97,7 +89,7 @@ export class InteractiveSelector<T> {
 
   async print() {
     const w = new StringWriter();
-    const { rows, columns } = this.consoleSize;
+    const { rows, columns } = this.console.size();
     w.writeSync(clearBuffer());
     w.writeSync(moveCursor(1, 1));
     w.writeSync(encode(truncate(`QUERY> ${this.input}`, columns)));
@@ -132,7 +124,7 @@ export class InteractiveSelector<T> {
       }
       switch (key.name) {
         case "backspace":
-          this.input = this.input.slice(0, -1);
+          this.updateInput(this.input.slice(0, -1));
           break;
         case "return":
         case "enter":
@@ -147,10 +139,11 @@ export class InteractiveSelector<T> {
           break;
         default:
           if (key.code) break;
-          this.input += key.sequence ?? "";
+          if (!key.sequence) break;
+          this.updateInput(this.input + key.sequence);
           break;
       }
-      const { rows } = this.consoleSize;
+      const { rows } = this.console.size();
       this.index = Math.min(this.filtered.length - 1, this.index);
       this.index = Math.min(rows - 1, this.index);
       this.index = Math.max(0, this.index);
