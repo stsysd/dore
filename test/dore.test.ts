@@ -57,6 +57,14 @@ const BACKSPACE_KEY = {
 //   meta: false,
 //   shift: false,
 // };
+const CTRL_SPACE_KEY = {
+  name: "space",
+  sequence: " ",
+  code: undefined,
+  ctrl: true,
+  meta: false,
+  shift: false,
+};
 
 const encoder = new TextEncoder();
 function encode(str: string): Uint8Array {
@@ -101,7 +109,7 @@ Deno.test("input nothing", async () => {
   }));
   const dore = new InteractiveSelector(source, fakeConsole(str2keys("\r")));
   const result = await dore.run();
-  assertEquals(result, "foo");
+  assertEquals(result, ["foo"]);
 });
 
 Deno.test("select", async () => {
@@ -111,7 +119,7 @@ Deno.test("select", async () => {
   }));
   const dore = new InteractiveSelector(source, fakeConsole(str2keys("q\r")));
   const result = await dore.run();
-  assertEquals(result, "qux");
+  assertEquals(result, ["qux"]);
 });
 
 Deno.test("keep order", async () => {
@@ -121,7 +129,7 @@ Deno.test("keep order", async () => {
   }));
   const dore = new InteractiveSelector(source, fakeConsole(str2keys("ba\r")));
   const result = await dore.run();
-  assertEquals(result, "bar");
+  assertEquals(result, ["bar"]);
 });
 
 Deno.test("select with AND pattern", async () => {
@@ -134,17 +142,17 @@ Deno.test("select with AND pattern", async () => {
     fakeConsole(str2keys("foo bar\r")),
   );
   const result = await dore.run();
-  assertEquals(result, "foobar");
+  assertEquals(result, ["foobar"]);
 });
 
-Deno.test("return null", async () => {
+Deno.test("return empty", async () => {
   const source = ["foo", "bar", "baz", "qux", "foobar"].map((item) => ({
     data: item,
     view: item,
   }));
   const dore = new InteractiveSelector(source, fakeConsole(str2keys("hoge\r")));
   const result = await dore.run();
-  assertEquals(result, null);
+  assertEquals(result, []);
 });
 
 Deno.test("backspace key", async () => {
@@ -159,7 +167,7 @@ Deno.test("backspace key", async () => {
     ),
   );
   const result = await dore.run();
-  assertEquals(result, "baz");
+  assertEquals(result, ["baz"]);
 });
 
 Deno.test("down key", async () => {
@@ -172,7 +180,7 @@ Deno.test("down key", async () => {
     ),
   );
   const result = await dore.run();
-  assertEquals(result, "bar 3");
+  assertEquals(result, ["bar 3"]);
 });
 
 Deno.test("down key on bottom", async () => {
@@ -187,7 +195,7 @@ Deno.test("down key on bottom", async () => {
     )),
   );
   const result = await dore.run();
-  assertEquals(result, "bar 5");
+  assertEquals(result, ["bar 5"]);
 });
 
 Deno.test("up key", async () => {
@@ -203,7 +211,7 @@ Deno.test("up key", async () => {
     ])),
   );
   const result = await dore.run();
-  assertEquals(result, "bar 2");
+  assertEquals(result, ["bar 2"]);
 });
 
 Deno.test("up key on top", async () => {
@@ -219,5 +227,53 @@ Deno.test("up key on top", async () => {
     )),
   );
   const result = await dore.run();
-  assertEquals(result, "bar 1");
+  assertEquals(result, ["bar 1"]);
+});
+
+Deno.test("select multiple items", async () => {
+  const source = ["foo", "bar", "baz", "qux", "foobar"].map((item) => ({
+    data: item,
+    view: item,
+  }));
+  const dore = new InteractiveSelector(
+    source,
+    fakeConsole(appendAsyncGenerator(
+      [CTRL_SPACE_KEY, CTRL_SPACE_KEY, DOWN_KEY, CTRL_SPACE_KEY, RETURN_KEY],
+    )),
+    { multiselect: true },
+  );
+  const result = await dore.run();
+  assertEquals(result, ["foo", "bar", "qux"]);
+});
+
+Deno.test("toggle mark in multiple selection", async () => {
+  const source = ["foo", "bar", "baz", "qux", "foobar"].map((item) => ({
+    data: item,
+    view: item,
+  }));
+  const dore = new InteractiveSelector(
+    source,
+    fakeConsole(appendAsyncGenerator(
+      [CTRL_SPACE_KEY, UP_KEY, CTRL_SPACE_KEY, CTRL_SPACE_KEY, RETURN_KEY],
+    )),
+    { multiselect: true },
+  );
+  const result = await dore.run();
+  assertEquals(result, ["bar"]);
+});
+
+Deno.test("select one in multiple selection", async () => {
+  const source = ["foo", "bar", "baz", "qux", "foobar"].map((item) => ({
+    data: item,
+    view: item,
+  }));
+  const dore = new InteractiveSelector(
+    source,
+    fakeConsole(appendAsyncGenerator(
+      [DOWN_KEY, DOWN_KEY, RETURN_KEY],
+    )),
+    { multiselect: true },
+  );
+  const result = await dore.run();
+  assertEquals(result, ["baz"]);
 });
