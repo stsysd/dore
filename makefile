@@ -5,6 +5,10 @@ FLAGS := --allow-read --allow-write=/dev/tty --unstable
 test:
 	deno test ${FLAGS}
 
+check:
+	deno lint
+	deno fmt
+
 run:
 	deno run ${FLAGS} ./main.ts
 
