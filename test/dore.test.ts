@@ -25,22 +25,22 @@ const DOWN_KEY = {
   meta: false,
   shift: false,
 };
-// const RIGHT_KEY = {
-//   name: "right",
-//   sequence: "\x1b[C",
-//   code: "[C",
-//   ctrl: false,
-//   meta: false,
-//   shift: false,
-// };
-// const LEFT_KEY = {
-//   name: "left",
-//   sequence: "\x1b[D",
-//   code: "[D",
-//   ctrl: false,
-//   meta: false,
-//   shift: false,
-// };
+const RIGHT_KEY = {
+  name: "right",
+  sequence: "\x1b[C",
+  code: "[C",
+  ctrl: false,
+  meta: false,
+  shift: false,
+};
+const LEFT_KEY = {
+  name: "left",
+  sequence: "\x1b[D",
+  code: "[D",
+  ctrl: false,
+  meta: false,
+  shift: false,
+};
 const BACKSPACE_KEY = {
   name: "backspace",
   sequence: "\x7f",
@@ -87,6 +87,10 @@ async function* appendAsyncGenerator<T>(
   }
 }
 
+const COLUMNS = 80;
+const ROWS = 4;
+const PAGE_SIZE = ROWS - 1;
+
 function fakeConsole(keys: AsyncGenerator<keycode.KeyCode>): IConsole {
   return {
     write(_: Uint8Array) {
@@ -94,7 +98,7 @@ function fakeConsole(keys: AsyncGenerator<keycode.KeyCode>): IConsole {
       return Promise.resolve();
     },
     size() {
-      return { columns: 80, rows: 40 };
+      return { columns: COLUMNS, rows: ROWS };
     },
     keypress() {
       return keys;
@@ -276,4 +280,35 @@ Deno.test("select one in multiple selection", async () => {
   );
   const result = await dore.run();
   assertEquals(result, ["baz"]);
+});
+
+Deno.test("next page", async () => {
+  const source = [...Array(PAGE_SIZE * 3)].map((_, ix) => ({
+    data: ix,
+    view: `${ix}`,
+  }));
+  const dore = new InteractiveSelector(
+    source,
+    fakeConsole(appendAsyncGenerator(
+      [DOWN_KEY, RIGHT_KEY, RETURN_KEY],
+    )),
+  );
+  const result = await dore.run();
+  assertEquals(result, [1 + PAGE_SIZE]);
+});
+
+Deno.test("prev page", async () => {
+  const source = [...Array(PAGE_SIZE * 3)].map((_, ix) => ({
+    data: ix,
+    view: `${ix}`,
+  }));
+  const dore = new InteractiveSelector(
+    source,
+    fakeConsole(appendAsyncGenerator(
+      [...Array(PAGE_SIZE + 2)].map(() => DOWN_KEY),
+      [LEFT_KEY, RETURN_KEY],
+    )),
+  );
+  const result = await dore.run();
+  assertEquals(result, [2]);
 });
