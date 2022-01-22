@@ -2,11 +2,12 @@ import { readLines } from "https://deno.land/std/io/mod.ts";
 import {
   Arg,
   Command,
+  Flag,
   Help,
   Name,
   Version,
 } from "https://raw.githubusercontent.com/stsysd/classopt/v0.1.0/mod.ts";
-import { select } from "./mod.ts";
+import { select, selectMany } from "./mod.ts";
 import info from "./info.json" assert { type: "json" };
 
 function printError(msg: string) {
@@ -19,22 +20,32 @@ class Program extends Command {
   @Arg({ name: "FILE", optional: true })
   file = "";
 
+  @Flag({ about: "select multiple item", short: "m" })
+  multiselect = false;
+
   async execute(): Promise<void> {
     const source = await this.loadSource();
     if (source.length === 0) {
       printError("ERROR: no choice");
       Deno.exit(1);
     }
-    if (source.length === 1) {
-      console.log(source[0]);
-      return;
+    if (this.multiselect) {
+      const selected = await selectMany(source);
+      if (selected.length === 0) {
+        printError("ERROR: cancelled");
+        Deno.exit(1);
+      }
+      for (const item of selected) {
+        console.log(item);
+      }
+    } else {
+      const selected = await select(source);
+      if (selected === null) {
+        printError("ERROR: cancelled");
+        Deno.exit(1);
+      }
+      console.log(selected);
     }
-    const selected = await select(source);
-    if (selected === null) {
-      printError("ERROR: cancelled");
-      Deno.exit(1);
-    }
-    console.log(selected);
   }
 
   async loadSource(): Promise<string[]> {

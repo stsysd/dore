@@ -51,36 +51,45 @@ function truncate(str: string, width: number): string {
 }
 
 type Entry<T> = { data: T; view: string };
+
 export class InteractiveSelector<T> {
   private index = 0;
   private input = "";
   private filtered: Entry<T>[];
   private signal: Disposable | null = null;
+  private multiselect: boolean;
+  private marks: Set<number> = new Set();
 
   constructor(
     private source: Entry<T>[],
     private console: IConsole,
+    opts: {
+      multiselect?: boolean;
+      console?: IConsole;
+    } = {},
   ) {
     this.filtered = this.source;
+    this.multiselect = opts.multiselect ?? false;
   }
 
   updateInput(str: string) {
     this.input = str;
     const words = this.input.split(" ");
+    this.marks = new Set();
     this.filtered = this.source.filter((e) =>
       words.every((w) => e.view.includes(w))
     );
   }
 
-  async run(): Promise<T | null> {
+  async run(): Promise<T[]> {
     if (this.source.length === 0) {
-      return null;
+      return [];
     }
     try {
       await this.console.write(enterBuffer());
       await this.print();
       await this.pollKeypress();
-      return this.filtered[this.index]?.data ?? null;
+      return [...this.marks].map((ix) => this.filtered[ix].data);
     } finally {
       await this.console.write(exitBuffer());
       this.signal?.dispose();
@@ -100,8 +109,10 @@ export class InteractiveSelector<T> {
         .map((entry, i) => [truncate(entry.view, columns), i] as const)
     ) {
       w.writeSync(encode("\n"));
-      if (i == this.index) {
+      if (i === this.index) {
         w.writeSync(encode(`${colors.bgMagenta(line || " ")}`));
+      } else if (this.marks.has(i)) {
+        w.writeSync(encode(`${colors.bgCyan(line || " ")}`));
       } else {
         w.writeSync(encode(`${line || " "}`));
       }
@@ -115,42 +126,58 @@ export class InteractiveSelector<T> {
       if (key.ctrl) {
         switch (key.name) {
           case "c":
-          case "x":
-            this.index = -1;
+          case "escape":
+            this.marks = new Set();
             return;
+          case "space":
+          case "`":
+            if (!this.multiselect) break;
+            if (this.marks.has(this.index)) {
+              this.marks.delete(this.index);
+            } else {
+              this.marks.add(this.index);
+            }
+            this.index += 1;
+            break;
           default:
-            continue;
+            // pass
+            break;
+        }
+      } else {
+        switch (key.name) {
+          case "backspace":
+            this.updateInput(this.input.slice(0, -1));
+            break;
+          case "return":
+          case "enter":
+            if (this.filtered.length && this.marks.size === 0) {
+              this.marks.add(this.index);
+            }
+            return;
+          case "up":
+            this.index -= 1;
+            break;
+          case "down":
+            this.index += 1;
+            break;
+          case "space":
+            this.updateInput(this.input + " ");
+            break;
+          default:
+            if (key.code) break;
+            if (!key.sequence) break;
+            this.updateInput(this.input + key.sequence);
+            break;
         }
       }
-      switch (key.name) {
-        case "backspace":
-          this.updateInput(this.input.slice(0, -1));
-          break;
-        case "return":
-        case "enter":
-          return;
-        case "up":
-          this.index -= 1;
-          this.index = Math.max(0, this.index);
-          break;
-        case "down":
-          this.index += 1;
-          this.index = Math.min(this.filtered.length - 1, this.index);
-          break;
-        default:
-          if (key.code) break;
-          if (!key.sequence) break;
-          this.updateInput(this.input + key.sequence);
-          break;
-      }
       const { rows } = this.console.size();
-      this.index = Math.min(this.filtered.length - 1, this.index);
-      this.index = Math.min(rows - 1, this.index);
+      this.index = Math.min(this.filtered.length - 1, rows - 1, this.index);
       this.index = Math.max(0, this.index);
       await this.print();
     }
   }
 }
+
 export async function select<T>(
   source: T[],
   opts: { show?(t: T): string } = {},
@@ -158,6 +185,20 @@ export async function select<T>(
   const dore = new InteractiveSelector(
     source.map((t) => ({ data: t, view: opts.show ? opts.show(t) : `${t}` })),
     await ttyConsole(),
+    { multiselect: false },
+  );
+  const ret = await dore.run();
+  return ret[0] ?? null;
+}
+
+export async function selectMany<T>(
+  source: T[],
+  opts: { show?(t: T): string } = {},
+): Promise<T[]> {
+  const dore = new InteractiveSelector(
+    source.map((t) => ({ data: t, view: opts.show ? opts.show(t) : `${t}` })),
+    await ttyConsole(),
+    { multiselect: true },
   );
   return await dore.run();
 }
