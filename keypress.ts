@@ -3,16 +3,20 @@ import { keycode } from "./deps.ts";
 type KeyCode = keycode.KeyCode;
 
 export async function* keypress(
-  opts: { tty?: Deno.File; bufferSize?: number } = {},
+  opts: { tty?: Deno.File } = {},
 ): AsyncGenerator<KeyCode> {
-  const buffer = new Uint8Array(opts.bufferSize || 256);
+  const decoder = new TextDecoder();
+  const buffer = new Uint8Array(8);
   const tty = opts.tty ?? Deno.stdin;
   try {
     while (true) {
       Deno.setRaw(tty.rid, true, { cbreak: false });
       const nread = await tty.read(buffer);
       Deno.setRaw(tty.rid, false);
-      const keys = keycode.parse(nread ? buffer.subarray(0, nread) : buffer);
+      const str = decoder.decode(nread ? buffer.subarray(0, nread) : buffer, {
+        stream: true,
+      });
+      const keys = keycode.parse(str);
       for (const key of keys) {
         yield key;
       }
