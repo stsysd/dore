@@ -1,4 +1,4 @@
-import { colors, Disposable, StringWriter } from "./deps.ts";
+import { colors, StringWriter } from "./deps.ts";
 import {
   clearBuffer,
   enterBuffer,
@@ -56,7 +56,6 @@ export class InteractiveSelector<T> {
   private index = 0;
   private input = "";
   private filtered: Entry<T>[];
-  private signal: Disposable | null = null;
   private multiselect: boolean;
   private marks: Set<number> = new Set();
 
@@ -92,7 +91,6 @@ export class InteractiveSelector<T> {
       return [...this.marks].map((ix) => this.filtered[ix].data);
     } finally {
       await this.console.write(exitBuffer());
-      this.signal?.dispose();
     }
   }
 
