@@ -9,13 +9,13 @@ import {
   Version,
 } from "https://raw.githubusercontent.com/stsysd/classopt/v0.1.0/mod.ts";
 import { select, selectMany } from "./mod.ts";
-import info from "./info.json" assert { type: "json" };
+import meta from "./meta.json" assert { type: "json" };
 
 function printError(msg: string) {
   console.error(`%c${msg}`, "color: red");
 }
-@Name(info.name)
-@Version(info.version)
+@Name(meta.name)
+@Version(meta.version)
 @Help("interactive selector")
 class Program extends Command {
   @Arg({ name: "FILE", optional: true })
