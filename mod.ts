@@ -58,17 +58,20 @@ export class InteractiveSelector<T> {
   private filtered: Entry<T>[];
   private multiselect: boolean;
   private marks: Set<number> = new Set();
+  private prompt: string;
 
   constructor(
     private source: Entry<T>[],
     private console: IConsole,
     opts: {
       multiselect?: boolean;
+      prompt?: string;
       console?: IConsole;
     } = {},
   ) {
     this.filtered = this.source;
     this.multiselect = opts.multiselect ?? false;
+    this.prompt = opts.prompt ?? "QUERY";
   }
 
   updateInput(str: string) {
@@ -101,7 +104,7 @@ export class InteractiveSelector<T> {
     const pageNum = Math.floor(this.index / pageSize);
     w.writeSync(clearBuffer());
     w.writeSync(moveCursor(1, 1));
-    w.writeSync(encode(truncate(`QUERY> ${this.input}`, columns)));
+    w.writeSync(encode(truncate(`${this.prompt}> ${this.input}`, columns)));
     w.writeSync(saveCurosr());
     for (
       const [line, i] of this.filtered
@@ -190,12 +193,12 @@ export class InteractiveSelector<T> {
 
 export async function select<T>(
   source: T[],
-  opts: { show?(t: T): string } = {},
+  opts: { show?(t: T): string; prompt?: string } = {},
 ): Promise<T | null> {
   const dore = new InteractiveSelector(
     source.map((t) => ({ data: t, view: opts.show ? opts.show(t) : `${t}` })),
     await ttyConsole(),
-    { multiselect: false },
+    { multiselect: false, prompt: opts.prompt },
   );
   const ret = await dore.run();
   return ret[0] ?? null;
@@ -203,12 +206,12 @@ export async function select<T>(
 
 export async function selectMany<T>(
   source: T[],
-  opts: { show?(t: T): string } = {},
+  opts: { show?(t: T): string; prompt?: string } = {},
 ): Promise<T[]> {
   const dore = new InteractiveSelector(
     source.map((t) => ({ data: t, view: opts.show ? opts.show(t) : `${t}` })),
     await ttyConsole(),
-    { multiselect: true },
+    { multiselect: true, prompt: opts.prompt },
   );
   return await dore.run();
 }

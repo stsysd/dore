@@ -27,6 +27,9 @@ class Program extends Command {
   @Flag({ about: "select multiple item", short: "m" })
   multiselect = false;
 
+  @Opt({ about: "specify prompt string" })
+  prompt?: string;
+
   ndjson = false;
 
   async execute(): Promise<void> {
@@ -37,10 +40,10 @@ class Program extends Command {
       Deno.exit(1);
     }
     if (this.multiselect) {
-      const selected = await selectMany(
-        source,
-        { show: (item) => `${item[this.jsonKey]}` },
-      );
+      const selected = await selectMany(source, {
+        show: (item) => `${item[this.jsonKey]}`,
+        prompt: this.prompt,
+      });
       if (selected.length === 0) {
         printError("ERROR: cancelled");
         Deno.exit(1);
@@ -55,6 +58,7 @@ class Program extends Command {
     } else {
       const selected = await select(source, {
         show: (item) => `${item[this.jsonKey]}`,
+        prompt: this.prompt,
       });
       if (selected === null) {
         printError("ERROR: cancelled");
