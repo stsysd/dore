@@ -1,4 +1,4 @@
-import { colors, StringWriter } from "./deps.ts";
+import { colors, StringWriter, truncate } from "./deps.ts";
 import {
   clearBuffer,
   enterBuffer,
@@ -33,21 +33,6 @@ export async function ttyConsole(): Promise<IConsole> {
 const encoder = new TextEncoder();
 function encode(str: string): Uint8Array {
   return encoder.encode(str);
-}
-
-function truncate(str: string, width: number): string {
-  let w = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str.charCodeAt(i) > 127) {
-      w += 2;
-    } else {
-      w += 1;
-    }
-    if (w > width) {
-      return str.slice(0, i - 1);
-    }
-  }
-  return str;
 }
 
 type Entry<T> = { data: T; view: string };
