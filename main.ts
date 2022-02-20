@@ -1,4 +1,5 @@
 import { readLines } from "https://deno.land/std/io/mod.ts";
+import { default as stringWidth } from "https://cdn.skypack.dev/string-width";
 import {
   Arg,
   Command,
@@ -14,6 +15,12 @@ import meta from "./meta.json" assert { type: "json" };
 function printError(msg: string) {
   console.error(`%c${msg}`, "color: red");
 }
+
+function padding(s: string, width: number): string {
+  const w = stringWidth(s);
+  return `${s}${" ".repeat(width - w)}`;
+}
+
 @Name(meta.name)
 @Version(meta.version)
 @Help("interactive selector")
@@ -21,8 +28,12 @@ class Program extends Command {
   @Arg({ name: "FILE", optional: true })
   file = "";
 
-  @Opt({ about: "parse input as ndjson, and show specified key", short: true })
-  jsonKey = "";
+  @Opt({
+    about: "parse input as ndjson, and show specified key",
+    short: true,
+    multiple: true,
+  })
+  jsonKey: string[] = [];
 
   @Flag({ about: "select multiple item", short: "m" })
   multiselect = false;
@@ -33,7 +44,7 @@ class Program extends Command {
   ndjson = false;
 
   async execute(): Promise<void> {
-    this.ndjson = !!this.jsonKey;
+    this.ndjson = this.jsonKey.length > 0;
     const source = await this.loadSource();
     if (source.length === 0) {
       printError("ERROR: no choice");
@@ -41,7 +52,7 @@ class Program extends Command {
     }
     if (this.multiselect) {
       const selected = await selectMany(source, {
-        show: (item) => `${item[this.jsonKey]}`,
+        show: this.showItem(source),
         prompt: this.prompt,
       });
       if (selected.length === 0) {
@@ -57,7 +68,7 @@ class Program extends Command {
       }
     } else {
       const selected = await select(source, {
-        show: (item) => `${item[this.jsonKey]}`,
+        show: this.showItem(source),
         prompt: this.prompt,
       });
       if (selected === null) {
@@ -84,7 +95,7 @@ class Program extends Command {
     }
 
     let source;
-    if (this.jsonKey) {
+    if (this.jsonKey.length > 0) {
       source = lines.map((line) => {
         try {
           return JSON.parse(line);
@@ -100,20 +111,37 @@ class Program extends Command {
           printError(`ERROR: ${item} is not object`);
           Deno.exit(1);
         }
-        if (!Object.hasOwn(item, this.jsonKey)) {
-          printError(
-            `ERROR: object ${
-              JSON.stringify(item)
-            } doesn't have key '${this.jsonKey}'`,
-          );
-          Deno.exit(1);
+        for (const key of this.jsonKey) {
+          if (!Object.hasOwn(item, key)) {
+            printError(
+              `ERROR: object ${JSON.stringify(item)} doesn't have key '${key}'`,
+            );
+            Deno.exit(1);
+          }
         }
       }
     } else {
       source = lines.map((line) => ({ value: line }));
-      this.jsonKey = "value";
+      this.jsonKey = ["value"];
     }
     return source;
+  }
+
+  showItem(
+    src: Record<string, unknown>[],
+  ): (item: Record<string, unknown>) => string {
+    const layout = [
+      ...this.jsonKey.slice(0, -1).map((key) => ({
+        key,
+        width: Math.max(...src.map((item) => stringWidth(`${item[key]}`))),
+      })),
+      { key: this.jsonKey[this.jsonKey.length - 1], width: 0 },
+    ];
+    console.log(layout);
+    return (item) =>
+      layout.map(({ key, width }) =>
+        width > 0 ? padding(`${item[key]}`, width) : `${item[key]}`
+      ).join(" ");
   }
 }
 
