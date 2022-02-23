@@ -137,7 +137,6 @@ class Program extends Command {
       })),
       { key: this.jsonKey[this.jsonKey.length - 1], width: 0 },
     ];
-    console.log(layout);
     return (item) =>
       layout.map(({ key, width }) =>
         width > 0 ? padding(`${item[key]}`, width) : `${item[key]}`
