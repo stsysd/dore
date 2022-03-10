@@ -41,7 +41,14 @@ class Program extends Command {
   @Opt({ about: "specify prompt string" })
   prompt?: string;
 
-  ndjson = false;
+
+  get ndjson(): boolean {
+    return !!this._jsonKeys;
+  }
+
+  get jsonKeys(): string[] {
+    return this._jsonKeys ?? ["value"];
+  }
 
   async execute(): Promise<void> {
     this.ndjson = this.jsonKey.length > 0;
@@ -95,7 +102,7 @@ class Program extends Command {
     }
 
     let source;
-    if (this.jsonKey.length > 0) {
+    if (this.ndjson) {
       source = lines.map((line) => {
         try {
           return JSON.parse(line);
@@ -111,7 +118,7 @@ class Program extends Command {
           printError(`ERROR: ${item} is not object`);
           Deno.exit(1);
         }
-        for (const key of this.jsonKey) {
+        for (const key of this.jsonKeys) {
           if (!Object.hasOwn(item, key)) {
             printError(
               `ERROR: object ${JSON.stringify(item)} doesn't have key '${key}'`,
@@ -122,7 +129,6 @@ class Program extends Command {
       }
     } else {
       source = lines.map((line) => ({ value: line }));
-      this.jsonKey = ["value"];
     }
     return source;
   }
@@ -131,11 +137,11 @@ class Program extends Command {
     src: Record<string, unknown>[],
   ): (item: Record<string, unknown>) => string {
     const layout = [
-      ...this.jsonKey.slice(0, -1).map((key) => ({
+      ...this.jsonKeys.slice(0, -1).map((key) => ({
         key,
         width: Math.max(...src.map((item) => stringWidth(`${item[key]}`))),
       })),
-      { key: this.jsonKey[this.jsonKey.length - 1], width: 0 },
+      { key: this.jsonKeys[this.jsonKeys.length - 1], width: 0 },
     ];
     return (item) =>
       layout.map(({ key, width }) =>
