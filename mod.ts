@@ -39,7 +39,7 @@ type Entry<T> = { data: T; view: string };
 
 export class InteractiveSelector<T> {
   private index = 0;
-  private input = "";
+  private input;
   private filtered: Entry<T>[];
   private multiselect: boolean;
   private marks: Set<number> = new Set();
@@ -52,11 +52,13 @@ export class InteractiveSelector<T> {
       multiselect?: boolean;
       prompt?: string;
       console?: IConsole;
+      query?: string;
     } = {},
   ) {
     this.filtered = this.source;
     this.multiselect = opts.multiselect ?? false;
     this.prompt = opts.prompt ?? "QUERY";
+    this.input = opts.query ?? "";
   }
 
   updateInput(str: string) {
@@ -178,12 +180,12 @@ export class InteractiveSelector<T> {
 
 export async function select<T>(
   source: T[],
-  opts: { show?(t: T): string; prompt?: string } = {},
+  opts: { show?(t: T): string; prompt?: string; query?: string } = {},
 ): Promise<T | null> {
   const dore = new InteractiveSelector(
     source.map((t) => ({ data: t, view: opts.show ? opts.show(t) : `${t}` })),
     await ttyConsole(),
-    { multiselect: false, prompt: opts.prompt },
+    { multiselect: false, prompt: opts.prompt, query: opts.query },
   );
   const ret = await dore.run();
   return ret[0] ?? null;
@@ -191,12 +193,12 @@ export async function select<T>(
 
 export async function selectMany<T>(
   source: T[],
-  opts: { show?(t: T): string; prompt?: string } = {},
+  opts: { show?(t: T): string; prompt?: string; query?: string } = {},
 ): Promise<T[]> {
   const dore = new InteractiveSelector(
     source.map((t) => ({ data: t, view: opts.show ? opts.show(t) : `${t}` })),
     await ttyConsole(),
-    { multiselect: true, prompt: opts.prompt },
+    { multiselect: true, prompt: opts.prompt, query: opts.query },
   );
   return await dore.run();
 }

@@ -30,10 +30,11 @@ class Program extends Command {
 
   @Opt({
     about: "parse input as ndjson, and show specified key",
+    long: "json-key",
     short: true,
     multiple: true,
   })
-  jsonKey: string[] = [];
+  _jsonKeys?: string[];
 
   @Flag({ about: "select multiple item", short: "m" })
   multiselect = false;
@@ -41,6 +42,8 @@ class Program extends Command {
   @Opt({ about: "specify prompt string" })
   prompt?: string;
 
+  @Opt({ about: "initial value for query" })
+  query?: string;
 
   get ndjson(): boolean {
     return !!this._jsonKeys;
@@ -51,7 +54,6 @@ class Program extends Command {
   }
 
   async execute(): Promise<void> {
-    this.ndjson = this.jsonKey.length > 0;
     const source = await this.loadSource();
     if (source.length === 0) {
       printError("ERROR: no choice");
@@ -61,6 +63,7 @@ class Program extends Command {
       const selected = await selectMany(source, {
         show: this.showItem(source),
         prompt: this.prompt,
+        query: this.query,
       });
       if (selected.length === 0) {
         printError("ERROR: cancelled");
@@ -77,6 +80,7 @@ class Program extends Command {
       const selected = await select(source, {
         show: this.showItem(source),
         prompt: this.prompt,
+        query: this.query,
       });
       if (selected === null) {
         printError("ERROR: cancelled");
