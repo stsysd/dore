@@ -1,4 +1,4 @@
-import { colors, StringWriter, truncate } from "./deps.ts";
+import { colors, stringWidth, StringWriter, truncate } from "./deps.ts";
 import {
   clearBuffer,
   enterBuffer,
@@ -178,12 +178,35 @@ export class InteractiveSelector<T> {
   }
 }
 
+type ShowFn<T> =
+  | ((t: T) => string)
+  | ((t: T) => string[]);
+
+function padding(s: string, width: number): string {
+  const w = stringWidth(s);
+  return `${s}${" ".repeat(width - w)}`;
+}
+
+function alignView(piecesList: string[][]): string[] {
+  const n = Math.max(...piecesList.map((ls) => ls.length));
+  const layout = [...Array(n - 1)].map((_, i) =>
+    Math.max(...piecesList.map((pieces) => stringWidth(pieces[i])))
+  );
+  return piecesList.map((pieces) =>
+    pieces.map((p, i) => layout[i] ? padding(p, layout[i]) : p)
+      .join(" ")
+  );
+}
+
 export async function select<T>(
   source: T[],
-  opts: { show?(t: T): string; prompt?: string; query?: string } = {},
+  opts: { show?: ShowFn<T>; prompt?: string; query?: string } = {},
 ): Promise<T | null> {
+  const views = alignView(
+    source.map((t) => [opts.show ? opts.show(t) : `${t}`].flat()),
+  );
   const dore = new InteractiveSelector(
-    source.map((t) => ({ data: t, view: opts.show ? opts.show(t) : `${t}` })),
+    source.map((t, i) => ({ data: t, view: views[i] })),
     await ttyConsole(),
     { multiselect: false, prompt: opts.prompt, query: opts.query },
   );
@@ -193,10 +216,13 @@ export async function select<T>(
 
 export async function selectMany<T>(
   source: T[],
-  opts: { show?(t: T): string; prompt?: string; query?: string } = {},
+  opts: { show?: ShowFn<T>; prompt?: string; query?: string } = {},
 ): Promise<T[]> {
+  const views = alignView(
+    source.map((t) => [opts.show ? opts.show(t) : `${t}`].flat()),
+  );
   const dore = new InteractiveSelector(
-    source.map((t) => ({ data: t, view: opts.show ? opts.show(t) : `${t}` })),
+    source.map((t, i) => ({ data: t, view: views[i] })),
     await ttyConsole(),
     { multiselect: true, prompt: opts.prompt, query: opts.query },
   );

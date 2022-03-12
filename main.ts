@@ -1,5 +1,4 @@
 import { readLines } from "https://deno.land/std/io/mod.ts";
-import { default as stringWidth } from "https://cdn.skypack.dev/string-width";
 import {
   Arg,
   Command,
@@ -14,11 +13,6 @@ import meta from "./meta.json" assert { type: "json" };
 
 function printError(msg: string) {
   console.error(`%c${msg}`, "color: red");
-}
-
-function padding(s: string, width: number): string {
-  const w = stringWidth(s);
-  return `${s}${" ".repeat(width - w)}`;
 }
 
 @Name(meta.name)
@@ -61,7 +55,7 @@ class Program extends Command {
     }
     if (this.multiselect) {
       const selected = await selectMany(source, {
-        show: this.showItem(source),
+        show: (item) => this.showItem(item),
         prompt: this.prompt,
         query: this.query,
       });
@@ -78,7 +72,7 @@ class Program extends Command {
       }
     } else {
       const selected = await select(source, {
-        show: this.showItem(source),
+        show: (item) => this.showItem(item),
         prompt: this.prompt,
         query: this.query,
       });
@@ -138,19 +132,9 @@ class Program extends Command {
   }
 
   showItem(
-    src: Record<string, unknown>[],
-  ): (item: Record<string, unknown>) => string {
-    const layout = [
-      ...this.jsonKeys.slice(0, -1).map((key) => ({
-        key,
-        width: Math.max(...src.map((item) => stringWidth(`${item[key]}`))),
-      })),
-      { key: this.jsonKeys[this.jsonKeys.length - 1], width: 0 },
-    ];
-    return (item) =>
-      layout.map(({ key, width }) =>
-        width > 0 ? padding(`${item[key]}`, width) : `${item[key]}`
-      ).join(" ");
+    item: Record<string, unknown>,
+  ): string[] {
+    return this.jsonKeys.map((key) => `${item[key]}`);
   }
 }
 
