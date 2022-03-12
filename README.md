@@ -7,7 +7,7 @@ written by [deno](https://deno.land/).
 ## Installation
 
 ```console
-deno install --allow-read --allow-write=/dev/tty --unstable -n dore https://raw.githubusercontent.com/stsysd/dore/v0.4.2/main.ts
+deno install --allow-read --allow-write=/dev/tty --unstable -n dore https://raw.githubusercontent.com/stsysd/dore/v0.4.5/main.ts
 ```
 
 ## Usage
@@ -28,7 +28,7 @@ $ dore src.txt > selected
 dore can be used as library.
 
 ```typescript
-import { select } from "https://raw.githubusercontent.com/stsysd/dore/v0.4.2/mod.ts";
+import { select } from "https://raw.githubusercontent.com/stsysd/dore/v0.4.5/mod.ts";
 
 const selected = await select(["foo", "bar", "baz"]);
 console.log("SELECTED:", selected);
