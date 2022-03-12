@@ -34,7 +34,7 @@ class Program extends Command {
     short: true,
     multiple: true,
   })
-  _jsonKeys?: string[];
+  _jsonKeys: string[] = [];
 
   @Flag({ about: "select multiple item", short: "m" })
   multiselect = false;
@@ -46,11 +46,11 @@ class Program extends Command {
   query?: string;
 
   get ndjson(): boolean {
-    return !!this._jsonKeys;
+    return this._jsonKeys.length > 0;
   }
 
   get jsonKeys(): string[] {
-    return this._jsonKeys ?? ["value"];
+    return this.ndjson ? this._jsonKeys : ["value"];
   }
 
   async execute(): Promise<void> {
