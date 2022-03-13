@@ -187,23 +187,25 @@ function padding(s: string, width: number): string {
   return `${s}${" ".repeat(width - w)}`;
 }
 
-function alignView(piecesList: string[][]): string[] {
+function alignView(piecesList: string[][], sep = "  "): string[] {
   const n = Math.max(...piecesList.map((ls) => ls.length));
   const layout = [...Array(n - 1)].map((_, i) =>
     Math.max(...piecesList.map((pieces) => stringWidth(pieces[i])))
   );
   return piecesList.map((pieces) =>
     pieces.map((p, i) => layout[i] ? padding(p, layout[i]) : p)
-      .join(" ")
+      .join(sep)
   );
 }
 
 export async function select<T>(
   source: T[],
-  opts: { show?: ShowFn<T>; prompt?: string; query?: string } = {},
+  opts: { show?: ShowFn<T>; prompt?: string; query?: string; sep?: string } =
+    {},
 ): Promise<T | null> {
   const views = alignView(
     source.map((t) => [opts.show ? opts.show(t) : `${t}`].flat()),
+    opts.sep,
   );
   const dore = new InteractiveSelector(
     source.map((t, i) => ({ data: t, view: views[i] })),
@@ -216,10 +218,12 @@ export async function select<T>(
 
 export async function selectMany<T>(
   source: T[],
-  opts: { show?: ShowFn<T>; prompt?: string; query?: string } = {},
+  opts: { show?: ShowFn<T>; prompt?: string; query?: string; sep?: string } =
+    {},
 ): Promise<T[]> {
   const views = alignView(
     source.map((t) => [opts.show ? opts.show(t) : `${t}`].flat()),
+    opts.sep,
   );
   const dore = new InteractiveSelector(
     source.map((t, i) => ({ data: t, view: views[i] })),
