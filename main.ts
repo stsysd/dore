@@ -116,14 +116,6 @@ class Program extends Command {
           printError(`ERROR: ${item} is not object`);
           Deno.exit(1);
         }
-        for (const key of this.jsonKeys) {
-          if (!Object.hasOwn(item, key)) {
-            printError(
-              `ERROR: object ${JSON.stringify(item)} doesn't have key '${key}'`,
-            );
-            Deno.exit(1);
-          }
-        }
       }
     } else {
       source = lines.map((line) => ({ value: line }));
@@ -134,7 +126,20 @@ class Program extends Command {
   showItem(
     item: Record<string, unknown>,
   ): string[] {
-    return this.jsonKeys.map((key) => `${item[key]}`);
+    return this.jsonKeys.map((key) =>
+      key.split(".").reduce(
+        (v: Record<string, unknown>, key) => {
+          if (!Object.hasOwn(v, key)) {
+            printError(
+              `ERROR: object ${JSON.stringify(item)} doesn't have key '${key}'`,
+            );
+            Deno.exit(1);
+          }
+          return v[key] as Record<string, unknown>;
+        },
+        item,
+      )
+    ).map((v) => `${v}`);
   }
 }
 
