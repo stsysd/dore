@@ -39,7 +39,7 @@ type Entry<T> = { data: T; view: string };
 
 export class InteractiveSelector<T> {
   private index = 0;
-  private input;
+  private input = "";
   private filtered: Entry<T>[];
   private multiselect: boolean;
   private marks: Set<number> = new Set();
@@ -58,7 +58,9 @@ export class InteractiveSelector<T> {
     this.filtered = this.source;
     this.multiselect = opts.multiselect ?? false;
     this.prompt = opts.prompt ?? "QUERY";
-    this.input = opts.query ?? "";
+    if (opts.query) {
+      this.updateInput(opts.query);
+    }
   }
 
   updateInput(str: string) {
