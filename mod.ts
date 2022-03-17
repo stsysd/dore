@@ -44,6 +44,7 @@ export class InteractiveSelector<T> {
   private multiselect: boolean;
   private marks: Set<number> = new Set();
   private prompt: string;
+  private select1: boolean;
 
   constructor(
     private source: Entry<T>[],
@@ -53,11 +54,13 @@ export class InteractiveSelector<T> {
       prompt?: string;
       console?: IConsole;
       query?: string;
+      select1?: boolean;
     } = {},
   ) {
     this.filtered = this.source;
     this.multiselect = opts.multiselect ?? false;
     this.prompt = opts.prompt ?? "QUERY";
+    this.select1 = opts.select1 ?? false;
     if (opts.query) {
       this.updateInput(opts.query);
     }
@@ -75,6 +78,9 @@ export class InteractiveSelector<T> {
   async run(): Promise<T[]> {
     if (this.source.length === 0) {
       return [];
+    }
+    if (this.filtered.length === 1 && this.select1) {
+      return this.filtered.map((item) => item.data);
     }
     try {
       await this.console.write(enterBuffer());
@@ -202,17 +208,23 @@ function alignView(piecesList: string[][], sep = "  "): string[] {
 
 export async function select<T>(
   source: T[],
-  opts: { show?: ShowFn<T>; prompt?: string; query?: string; sep?: string } =
-    {},
+  opts: {
+    show?: ShowFn<T>;
+    prompt?: string;
+    query?: string;
+    sep?: string;
+    select1?: boolean;
+  } = {},
 ): Promise<T | null> {
+  const { show, sep, ...rest } = opts;
   const views = alignView(
-    source.map((t) => [opts.show ? opts.show(t) : `${t}`].flat()),
-    opts.sep,
+    source.map((t) => [show ? show(t) : `${t}`].flat()),
+    sep,
   );
   const dore = new InteractiveSelector(
     source.map((t, i) => ({ data: t, view: views[i] })),
     await ttyConsole(),
-    { multiselect: false, prompt: opts.prompt, query: opts.query },
+    { multiselect: false, ...rest },
   );
   const ret = await dore.run();
   return ret[0] ?? null;
@@ -220,17 +232,23 @@ export async function select<T>(
 
 export async function selectMany<T>(
   source: T[],
-  opts: { show?: ShowFn<T>; prompt?: string; query?: string; sep?: string } =
-    {},
+  opts: {
+    show?: ShowFn<T>;
+    sep?: string;
+    prompt?: string;
+    query?: string;
+    select1?: boolean;
+  } = {},
 ): Promise<T[]> {
+  const { show, sep, ...rest } = opts;
   const views = alignView(
-    source.map((t) => [opts.show ? opts.show(t) : `${t}`].flat()),
-    opts.sep,
+    source.map((t) => [show ? show(t) : `${t}`].flat()),
+    sep,
   );
   const dore = new InteractiveSelector(
     source.map((t, i) => ({ data: t, view: views[i] })),
     await ttyConsole(),
-    { multiselect: true, prompt: opts.prompt, query: opts.query },
+    { multiselect: true, ...rest },
   );
   return await dore.run();
 }

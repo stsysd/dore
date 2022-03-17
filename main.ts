@@ -39,6 +39,14 @@ class Program extends Command {
   @Opt({ about: "initial value for query" })
   query?: string;
 
+  @Flag({
+    about:
+      "select first item and immediately exit if the input contains only 1 item",
+    long: "select-1",
+    short: "1",
+  })
+  select1?: boolean;
+
   get ndjson(): boolean {
     return this._jsonKeys.length > 0;
   }
@@ -58,6 +66,7 @@ class Program extends Command {
         show: (item) => this.showItem(item),
         prompt: this.prompt,
         query: this.query,
+        select1: this.select1,
       });
       if (selected.length === 0) {
         printError("ERROR: cancelled");
@@ -75,6 +84,7 @@ class Program extends Command {
         show: (item) => this.showItem(item),
         prompt: this.prompt,
         query: this.query,
+        select1: this.select1,
       });
       if (selected === null) {
         printError("ERROR: cancelled");
