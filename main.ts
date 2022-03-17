@@ -7,7 +7,7 @@ import {
   Name,
   Opt,
   Version,
-} from "https://raw.githubusercontent.com/stsysd/classopt/v0.1.0/mod.ts";
+} from "https://deno.land/x/classopt@v0.1.2/mod.ts";
 import { select, selectMany } from "./mod.ts";
 import meta from "./meta.json" assert { type: "json" };
 
