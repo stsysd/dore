@@ -133,9 +133,7 @@ class Program extends Command {
     return source;
   }
 
-  showItem(
-    item: Record<string, unknown>,
-  ): string[] {
+  showItem(item: Record<string, unknown>): string[] {
     return this.jsonKeys.map((key) =>
       key.split(".").reduce(
         (v: Record<string, unknown>, key) => {
